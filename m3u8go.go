@@ -3,8 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/grafov/m3u8"
 )
@@ -14,7 +17,7 @@ func main() {
 	flag.StringVar(&m3u8FilePath, "i", "", "m3u8 master playlist to filepath")
 	flag.Parse()
 
-	f, err := os.Open(m3u8FilePath)
+	f, err := readFile(m3u8FilePath)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -31,4 +34,20 @@ func main() {
 	for _, v := range p.(*m3u8.MasterPlaylist).Variants {
 		fmt.Println(v.URI)
 	}
+}
+
+func readFile(m3u8FilePath string) (io.ReadCloser, error) {
+	if strings.HasPrefix(m3u8FilePath, "http") {
+		resp, err := http.Get(m3u8FilePath)
+		if err != nil {
+			return nil, err
+		}
+		return resp.Body, nil
+	}
+
+	f, err := os.Open(m3u8FilePath)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }
